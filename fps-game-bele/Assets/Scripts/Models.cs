@@ -6,7 +6,13 @@ using UnityEngine;
 public static class Models
 {
 
-#region - Player -
+    #region - Player -
+    public enum PlayerStance{
+        Stand,
+        Crouch,
+        Prone
+    }
+
     [Serializable]
     public class PlayerSettingsModel
     {
@@ -31,5 +37,11 @@ public static class Models
 
         public float JumpTime;
     }
-#endregion
+
+    [Serializable]
+    public class PlayerStanceSettings{
+        public float CameraHeight;
+        public CapsuleCollider StanceCollider;
+    }
+    #endregion
 }

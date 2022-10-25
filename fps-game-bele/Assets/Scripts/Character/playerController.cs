@@ -40,6 +40,16 @@ public class playerController : MonoBehaviour
 
     private Vector3 jumpForceVelocity;
 
+    [Header("Stance")]
+    public PlayerStance playerStance;
+    public float playerStanceSmoothing; // time in sec to change camera height
+    public PlayerStanceSettings playerStandStance;
+    public PlayerStanceSettings playerCrouchStance;
+    public PlayerStanceSettings playerProneStance;
+
+    private float cameraHeight;
+    private float cameraHeightVelocity;
+
     private void Awake()
     {
         // Get the DefaultInput asset
@@ -63,6 +73,8 @@ public class playerController : MonoBehaviour
 
         // Get the CharacterController component
         characterController = GetComponent<CharacterController>();
+
+        cameraHeight = cameraHolder.localPosition.y;
     }
 
     private void Update()
@@ -70,6 +82,7 @@ public class playerController : MonoBehaviour
         CalculateView();
         CalculateMovement();
         CalculateJump();
+        CalculateCameraHeight();
     }
 
     private void CalculateView()
@@ -107,13 +120,12 @@ public class playerController : MonoBehaviour
         newMovementSpeed = transform.TransformDirection(newMovementSpeed);
 
         // Apply gravity
-        if (playerGravity > gravityMin && jumpForce.y < 0.1f)
+        if (playerGravity > gravityMin)
             playerGravity -= gravity * Time.deltaTime;
 
-        if (characterController.isGrounded && playerGravity < -1)
-            playerGravity = -1f;
+        if (characterController.isGrounded && playerGravity < -0.1)
+            playerGravity = -0.1f;
 
-        if (jumpForce.y > 0.1f) playerGravity = 0;
 
         newMovementSpeed.y += playerGravity;
         newMovementSpeed += jumpForce * Time.deltaTime;
@@ -132,10 +144,26 @@ public class playerController : MonoBehaviour
                 playerSettings.JumpTime);
     }
 
+    private void CalculateCameraHeight(){
+    	// Change the camera height depending on the stance: Stand, crouch or prone
+    	var stanceHeight = playerStandStance.CameraHeight;
+
+    	if (playerStance == PlayerStance.Crouch) {
+    		stanceHeight = playerCrouchStance.CameraHeight;
+    	} else if (playerStance == PlayerStance.Prone){
+    		stanceHeight = playerProneStance.CameraHeight;
+    	} 
+
+
+    	cameraHeight = Mathf.SmoothDamp(cameraHolder.localPosition.y, stanceHeight, ref cameraHeightVelocity, playerStanceSmoothing);
+    	cameraHolder.localPosition = new Vector3(cameraHolder.localPosition.x,cameraHeight,cameraHolder.localPosition.z);
+    }
+
     private void Jump()
     {
         if (!characterController.isGrounded) return;
 
         jumpForce = Vector3.up * playerSettings.JumpHeight;
+        playerGravity = 0;
     }
 }
