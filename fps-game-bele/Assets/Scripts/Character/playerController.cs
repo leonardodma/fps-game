@@ -50,6 +50,12 @@ public class playerController : MonoBehaviour
     private float cameraHeight;
     private float cameraHeightVelocity;
 
+    private Vector3 stanceColiderCenter;
+    private Vector3 stanceColiderCenterVelocity;
+
+    private float stanceColiderHeight;
+    private float stanceColiderHeightVelocity;
+
     private void Awake()
     {
         // Get the DefaultInput asset
@@ -82,7 +88,7 @@ public class playerController : MonoBehaviour
         CalculateView();
         CalculateMovement();
         CalculateJump();
-        CalculateCameraHeight();
+        CalculateStance();
     }
 
     private void CalculateView()
@@ -144,19 +150,22 @@ public class playerController : MonoBehaviour
                 playerSettings.JumpTime);
     }
 
-    private void CalculateCameraHeight(){
+    private void CalculateStance(){
     	// Change the camera height depending on the stance: Stand, crouch or prone
-    	var stanceHeight = playerStandStance.CameraHeight;
+    	var currentStance = playerStandStance;
 
     	if (playerStance == PlayerStance.Crouch) {
-    		stanceHeight = playerCrouchStance.CameraHeight;
+    		currentStance = playerCrouchStance;
     	} else if (playerStance == PlayerStance.Prone){
-    		stanceHeight = playerProneStance.CameraHeight;
+    		currentStance = playerProneStance;
     	} 
 
 
-    	cameraHeight = Mathf.SmoothDamp(cameraHolder.localPosition.y, stanceHeight, ref cameraHeightVelocity, playerStanceSmoothing);
+    	cameraHeight = Mathf.SmoothDamp(cameraHolder.localPosition.y, currentStance.CameraHeight, ref cameraHeightVelocity, playerStanceSmoothing);
     	cameraHolder.localPosition = new Vector3(cameraHolder.localPosition.x,cameraHeight,cameraHolder.localPosition.z);
+
+    	characterController.height = Mathf.SmoothDamp(characterController.height, currentStance.StanceCollider.height, ref stanceColiderHeightVelocity, playerStanceSmoothing);
+    	characterController.center = Vector3.SmoothDamp(characterController.center, currentStance.StanceCollider.center, ref stanceColiderCenterVelocity, playerStanceSmoothing);
     }
 
     private void Jump()
