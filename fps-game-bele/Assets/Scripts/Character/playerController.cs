@@ -10,9 +10,9 @@ public class playerController : MonoBehaviour
 
     private DefaultInput defaultInput;
 
-    public Vector2 inputMovement;
+    private Vector2 inputMovement;
 
-    public Vector2 inputView;
+    private Vector2 inputView;
 
     private Vector3 newCameraRotation;
 
@@ -20,24 +20,21 @@ public class playerController : MonoBehaviour
 
     [Header("References")]
     public Transform cameraHolder;
+    public Transform feetTransform;
 
     [Header("Settings")]
     public PlayerSettingsModel playerSettings;
-
     public float viewClampYMin = -70;
-
     public float viewClampYMax = 80;
+    public LayerMask playerMask;
 
     [Header("Gravity")]
     public float gravity;
-
     public float gravityMin;
-
     private float playerGravity;
 
     [Header("Jump")]
     public Vector3 jumpForce;
-
     private Vector3 jumpForceVelocity;
 
     [Header("Stance")]
@@ -46,16 +43,14 @@ public class playerController : MonoBehaviour
     public PlayerStanceSettings playerStandStance;
     public PlayerStanceSettings playerCrouchStance;
     public PlayerStanceSettings playerProneStance;
-
+    public float stanceCheckErrorMargin = 0.05f;
     private float cameraHeight;
     private float cameraHeightVelocity;
 
-    private Vector3 stanceColiderCenter;
     private Vector3 stanceColiderCenterVelocity;
-
-    private float stanceColiderHeight;
     private float stanceColiderHeightVelocity;
 
+ 
     private void Awake()
     {
         // Get the DefaultInput asset
@@ -71,6 +66,12 @@ public class playerController : MonoBehaviour
 
         // Call Jump() when the Jump action is performed
         defaultInput.Character.Jump.performed += e => Jump();
+
+        // Call Jump() when the Crouch action is performed
+        defaultInput.Character.Crouch.performed += e => Crouch();
+
+        // Call Jump() when the Prone action is performed
+        defaultInput.Character.Prone.performed += e => Prone();
 
         defaultInput.Enable();
 
@@ -174,5 +175,39 @@ public class playerController : MonoBehaviour
 
         jumpForce = Vector3.up * playerSettings.JumpHeight;
         playerGravity = 0;
+    }
+
+    private void Crouch()
+    {
+    	if (playerStance == PlayerStance.Crouch){
+            if (StanceCheck(playerStandStance.StanceCollider.height)){
+                return;
+            }
+    		playerStance = PlayerStance.Stand;
+    	} else {
+    		playerStance = PlayerStance.Crouch;
+    	}
+
+    	
+    }
+
+    private void Prone()
+    {
+        if (playerStance == PlayerStance.Prone){
+            if (StanceCheck(playerStandStance.StanceCollider.height)){
+                return;
+            }
+            playerStance = PlayerStance.Stand;
+        } else {
+            playerStance = PlayerStance.Prone;
+        }
+    	
+    }
+
+    private bool StanceCheck(float stanceCheckHeight){
+        var start = new Vector3(feetTransform.position.x, feetTransform.position.y + stanceCheckErrorMargin + characterController.radius, feetTransform.position.z);
+        var end = new Vector3(feetTransform.position.x, feetTransform.position.y - stanceCheckErrorMargin - characterController.radius + stanceCheckHeight, feetTransform.position.z);
+
+        return Physics.CheckCapsule(start, end, characterController.radius, playerMask);
     }
 }
